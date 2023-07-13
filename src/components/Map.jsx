@@ -1,44 +1,51 @@
-import React, { useEffect, useRef } from 'react';
-import mapboxgl from 'mapbox-gl';
+import React, { useState } from 'react';
+import ReactMapGL, { Marker, FlyToInterpolator } from 'react-map-gl';
 
-mapboxgl.accessToken = 'pk.eyJ1IjoicG0yNTciLCJhIjoiY2xrMG50cmtzMDgwazNqcGp3NnNzYzJ0biJ9.qyNC6ffyJNdZ0--qCz-RNw'; // Replace with your Mapbox access token
+const Map = ({ handleCaptureImage }) => {
+  const [viewport, setViewport] = useState({
+    latitude: 37.7577,
+    longitude: -122.4376,
+    zoom: 12,
+  });
 
-function Map({ onCaptureImage }) {
-  const mapContainerRef = useRef(null);
-  const mapRef = useRef(null);
+  const handleViewportChange = (newViewport) => {
+    setViewport(newViewport);
+  };
 
-  useEffect(() => {
-    mapRef.current = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: [-74.5, 40], // Initial map center
-      zoom: 9, // Initial zoom level
+  const handleMapClick = (event) => {
+    const [longitude, latitude] = event.lngLat;
+    setViewport({
+      ...viewport,
+      latitude,
+      longitude,
+      zoom: 16,
+      transitionInterpolator: new FlyToInterpolator({ speed: 2 }),
+      transitionDuration: 'auto',
     });
+  };
 
-    return () => {
-      mapRef.current.remove();
-    };
-  }, []);
-
-  const captureImage = () => {
-    mapRef.current.once('render', () => {
-      mapRef.current.getCanvas().toBlob((blob) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          onCaptureImage(reader.result);
-        };
-        reader.readAsDataURL(blob);
-      });
-    });
-    mapRef.current.triggerRepaint();
+  const handleCaptureButtonClick = () => {
+    handleCaptureImage(viewport);
   };
 
   return (
     <div>
-      <div ref={mapContainerRef} style={{ height: '400px' }} />
-      <button onClick={captureImage}>Capture Image</button>
+      <ReactMapGL
+        {...viewport}
+        width="100%"
+        height={400}
+        mapStyle="mapbox://styles/mapbox/streets-v11"
+        mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_ACCESS_TOKEN}
+        onViewportChange={handleViewportChange}
+        onClick={handleMapClick}
+      >
+        <Marker latitude={viewport.latitude} longitude={viewport.longitude} offsetLeft={-20} offsetTop={-10}>
+          <div>Selected Location</div>
+        </Marker>
+      </ReactMapGL>
+      <button onClick={handleCaptureButtonClick}>Capture Image</button>
     </div>
   );
-}
+};
 
 export default Map;
