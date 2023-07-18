@@ -1,49 +1,62 @@
-import React, { useState } from 'react';
-import ReactMapGL, { Marker, FlyToInterpolator } from 'react-map-gl';
+import React, { useRef, useEffect, useState } from 'react';
+import mapboxgl from 'mapbox-gl';
 
-const Map = ({ handleCaptureImage }) => {
-  const [viewport, setViewport] = useState({
-    latitude: 37.7577,
-    longitude: -122.4376,
-    zoom: 12,
-  });
+mapboxgl.accessToken = 'pk.eyJ1IjoicG0yNTciLCJhIjoiY2xrMG50cmtzMDgwazNqcGp3NnNzYzJ0biJ9.qyNC6ffyJNdZ0--qCz-RNw';
 
-  const handleViewportChange = (newViewport) => {
-    setViewport(newViewport);
-  };
+const Map = () => {
+  const mapContainer = useRef(null);
+  const [map, setMap] = useState(null);
+  const [visibleRegion, setVisibleRegion] = useState(null);
 
-  const handleMapClick = (event) => {
-    const [longitude, latitude] = event.lngLat;
-    setViewport({
-      ...viewport,
-      latitude,
-      longitude,
-      zoom: 16,
-      transitionInterpolator: new FlyToInterpolator({ speed: 2 }),
-      transitionDuration: 'auto',
-    });
-  };
+  useEffect(() => {
+    const initializeMap = () => {
+      const newMap = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/pm257/clk0vyrkb00aj01qr02byb62a',
+        center: [0, 0],
+        zoom: 2,
+      });
 
-  const handleCaptureButtonClick = () => {
-    handleCaptureImage(viewport);
+      newMap.on('load', () => {
+        setMap(newMap);
+      });
+
+      newMap.on('moveend', () => {
+        const bounds = newMap.getBounds();
+        setVisibleRegion(bounds);
+      });
+    };
+
+    if (!map) {
+      initializeMap();
+    }
+  }, [map]);
+
+  const captureImage = () => {
+    if (map) {
+      map.once('render', () => {
+        map.getCanvas().toBlob((blob) => {
+          // Use the captured image blob as needed (e.g., send to backend)
+          console.log('Image blob:', blob);
+        });
+      });
+      map.repaint = true;
+    }
   };
 
   return (
     <div>
-      <ReactMapGL
-        {...viewport}
-        width="100%"
-        height={400}
-        mapStyle="mapbox://styles/mapbox/streets-v11"
-        mapboxApiAccessToken={process.env.REACT_APP_MAPBOX_ACCESS_TOKEN}
-        onViewportChange={handleViewportChange}
-        onClick={handleMapClick}
-      >
-        <Marker latitude={viewport.latitude} longitude={viewport.longitude} offsetLeft={-20} offsetTop={-10}>
-          <div>Selected Location</div>
-        </Marker>
-      </ReactMapGL>
-      <button onClick={handleCaptureButtonClick}>Capture Image</button>
+      <div ref={mapContainer} style={{ width: '100%', height: '400px' }} />
+      <button onClick={captureImage}>Capture Image</button>
+      {visibleRegion && (
+        <div>
+          <h3>Visible Region</h3>
+          <p>North: {visibleRegion.getNorth().toFixed(2)}</p>
+          <p>South: {visibleRegion.getSouth().toFixed(2)}</p>
+          <p>East: {visibleRegion.getEast().toFixed(2)}</p>
+          <p>West: {visibleRegion.getWest().toFixed(2)}</p>
+        </div>
+      )}
     </div>
   );
 };

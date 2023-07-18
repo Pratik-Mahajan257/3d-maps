@@ -1,25 +1,18 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import Map from './Map';
-import Cuboid from './Cuboid';
+import React from 'react';
+import { Route, Routes} from 'react-router-dom';
+import Map from './components/Map';
+import Cuboid from './components/Cuboid';
 
 const App = () => {
-  const [imageURL, setImageURL] = useState('');
-
-  const handleCaptureImage = async (viewport) => {
-    try {
-      const response = await axios.post('http://localhost:5000/capture-image', { viewport });
-      setImageURL(response.data.imageURL);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   return (
-    <div>
-      <Map handleCaptureImage={handleCaptureImage} />
-      {imageURL && <Cuboid imageURL={imageURL} />}
-    </div>
+   
+     <Routes>
+
+        <Route exact path="/" component={Map} />
+        <Route exact path="/cuboid" component={Cuboid} />
+    
+     </Routes>
+   
   );
 };
 
